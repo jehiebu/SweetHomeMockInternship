@@ -724,11 +724,12 @@ public class FurnitureTable extends JTable implements View, Printable {
   }
 
   /**
-   * Prints this component to make it fill <code>pageFormat</code> imageable size.
+   * Prints the furniture table using its visible columns and an additional level column if it is not already displayed.
+   * The original on-screen column configuration is preserved.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) throws PrinterException {
-    // Create a printable column model from the column model of this table 
-    // with printable renderers for each column
+    // Create a separate printable column model with appropriate renderers
+    // Include the Level column without changing the on-screen columns
     DefaultTableColumnModel printableColumnModel = new DefaultTableColumnModel();
     TableColumnModel columnModel = getColumnModel();
     final DefaultTableCellRenderer defaultRenderer = new DefaultTableCellRenderer();
@@ -750,8 +751,27 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
-    for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
-      final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+
+    List<TableColumn> columnsToPrint = new ArrayList<TableColumn>();
+    boolean levelAlreadyShown = false;
+
+    for (int i = 0; i < columnModel.getColumnCount(); i++) {
+      TableColumn column = columnModel.getColumn(i);
+      columnsToPrint.add(column);
+
+      if (column.getIdentifier() == HomePieceOfFurniture.SortableProperty.LEVEL) {
+        levelAlreadyShown = true;
+      }
+    }
+
+    // Ensure the Level column is included exactly once in the printed table
+    if (!levelAlreadyShown) {
+      TableColumn levelColumn = ((FurnitureTableColumnModel)columnModel)
+              .availableColumns.get(HomePieceOfFurniture.SortableProperty.LEVEL);
+      columnsToPrint.add(levelColumn);
+    }
+
+    for (final TableColumn tableColumn : columnsToPrint) {
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
